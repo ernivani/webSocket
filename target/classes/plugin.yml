@@ -1,0 +1,5 @@
+name: Websocket
+version: '1.0-SNAPSHOT'
+main: fr.ernicani.websocket
+api-version: 1.18
+authors: [ ernicani ]

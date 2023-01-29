@@ -1,0 +1,5 @@
+name: Websocket
+version: '${project.version}'
+main: fr.ernicani.websocket
+api-version: 1.18
+authors: [ ernicani ]
