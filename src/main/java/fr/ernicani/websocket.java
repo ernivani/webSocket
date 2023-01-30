@@ -15,7 +15,7 @@ public final class websocket extends JavaPlugin implements PluginMessageListener
     @Override
     public void onEnable() {
         try {
-            checkIfBungee();
+            getServer().getMessenger().registerIncomingPluginChannel( this, "zonday:main", this );
             Bukkit.getConsoleSender().sendMessage("§b[WebSocket] Plugin activé !");
         } catch (Exception e) {
             Bukkit.getConsoleSender().sendMessage("§c[WebSocket] Erreur survenue lors de l'activation du plugin : " + e);
@@ -40,19 +40,9 @@ public final class websocket extends JavaPlugin implements PluginMessageListener
         if ( subChannel.equalsIgnoreCase( "zonday:main" ) )
         {
             String data = in.readUTF();
-            Bukkit.getConsoleSender().sendMessage("§b[WebSocket] Message reçu : " + data);
+            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), data);
 
-        }
-    }
 
-    private void checkIfBungee()
-    {
-        if ( !getServer().spigot().getConfig().getConfigurationSection("settings").getBoolean( "settings.bungeecord" ) )
-        {
-            getLogger().severe( "This server is not BungeeCord." );
-            getLogger().severe( "If the server is already hooked to BungeeCord, please enable it into your spigot.yml aswell." );
-            getLogger().severe( "Plugin disabled!" );
-            getServer().getPluginManager().disablePlugin( this );
         }
     }
 
