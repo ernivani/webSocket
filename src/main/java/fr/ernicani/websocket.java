@@ -31,6 +31,7 @@ public final class websocket extends JavaPlugin implements PluginMessageListener
     @Override
     public void onPluginMessageReceived(String channel, Player player, byte[] bytes)
     {
+
         if ( !channel.equalsIgnoreCase( "zonday:main" ) )
         {
             return;
@@ -40,11 +41,49 @@ public final class websocket extends JavaPlugin implements PluginMessageListener
         if ( subChannel.equalsIgnoreCase( "zonday:main" ) )
         {
             String data = in.readUTF();
-            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), data);
 
 
+            String[] params = data.split("&");
+
+            for (String param : params) {
+                Bukkit.getConsoleSender().sendMessage("§b[WebSocket] Paramètre reçu : " + param);
+                if (param.startsWith("player=")) {
+                    param = param.replace("player=", "");
+                    params[1] = param;
+                }
+                else if (param.startsWith("command=")) {
+                    param = param.replace("command=", "");
+                    params[0] = param;
+                }
+            }
+            String cmd = params[0];
+            String playerName = params[1];
+            Player p;
+
+            p = Bukkit.getPlayer(playerName);
+
+            if (p == null) {
+                Bukkit.getConsoleSender().sendMessage("§c[WebSocket] Le joueur "+ playerName +" n'est pas connecter !");
+                // TODO: Stcoket dans un fichier yaml et
+                //  verifier a chaque connection d'un joueur si il a des commandes en attentes dans le fichier yaml
+                return;
+            }
+
+            Bukkit.getConsoleSender().sendMessage("§b[WebSocket] Commande reçu : " + cmd);
+            Bukkit.getConsoleSender().sendMessage("§b[WebSocket] Joueur reçu : " + p.getDisplayName());
+
+
+            cmd = cmd.replace("player", p.getDisplayName());
+            Bukkit.getConsoleSender().sendMessage("§e[WebSocket] Commande finis : " + cmd);
+
+
+            try {
+                Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd);
+            }
+            catch (Exception e) {
+                Bukkit.getConsoleSender().sendMessage("§c[WebSocket] Erreur survenue lors de l'exécution de la commande : " + e);
+                e.printStackTrace();
+            }
         }
     }
-
-
 }
