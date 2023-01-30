@@ -1,7 +1,11 @@
 package fr.ernicani;
 
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteStreams;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -11,7 +15,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
 
-public final class websocket extends JavaPlugin {
+public final class websocket extends JavaPlugin implements PluginMessageListener {
 
     private ServerSocket serverSocket;
     private Thread listenThread;
@@ -20,8 +24,8 @@ public final class websocket extends JavaPlugin {
     @Override
     public void onEnable() {
         try {
+            checkIfBungee();
             Bukkit.getConsoleSender().sendMessage("§b[WebSocket] Plugin activé !");
-            run();
         } catch (Exception e) {
             Bukkit.getConsoleSender().sendMessage("§c[WebSocket] Erreur survenue lors de l'activation du plugin : " + e);
             e.printStackTrace();
@@ -40,59 +44,33 @@ public final class websocket extends JavaPlugin {
         }
     }
 
-    private void run() {
-        try {
-            serverSocket = new ServerSocket(1234);
-        } catch (IOException e) {
-            Bukkit.getConsoleSender().sendMessage("§c[WebSocket] Erreur survenue lors de la création du serveur de socket : " + e);
-            e.printStackTrace();
+    @Override
+    public void onPluginMessageReceived(String channel, Player player, byte[] bytes)
+    {
+        if ( !channel.equalsIgnoreCase( "zonday:main" ) )
+        {
             return;
         }
-        Bukkit.getConsoleSender().sendMessage("§a[WebSocket] Écoute activée sur le port 1234");
+        ByteArrayDataInput in = ByteStreams.newDataInput( bytes );
+        String subChannel = in.readUTF();
+        if ( subChannel.equalsIgnoreCase( "zonday:main" ) )
+        {
+            String data = in.readUTF();
+            Bukkit.getConsoleSender().sendMessage("§b[WebSocket] Message reçu : " + data);
 
-        listenThread = new Thread(() -> {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Bukkit.getConsoleSender().sendMessage("§c[WebSocket] Erreur survenue lors de la mise en veille du thread d'écoute : " + e);
-                e.printStackTrace();
-                Thread.currentThread().interrupt();
-            }
-            while (!Thread.interrupted()) {
-                try {
-                    Socket socket = serverSocket.accept();
-                    // Bukkit.getConsoleSender().sendMessage("§a[WebSocket] Socket : " + socket);
-                    BufferedReader socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    String request = socketReader.readLine();
-                    // Bukkit.getConsoleSender().sendMessage("§b[WebSocket] Requête reçue : " + request);
-                    String[] parts = request.split("\\?");
-                    String[] params = parts[1].split("&");
-                    String ip = "";
-                    String command = "";
-                    for (String param : params) {
-                        if (param.startsWith("ip=")) {
-                            ip = param.substring(3).replaceAll("%3A", ":");
-                        } else if (param.startsWith("command=")) {
-                            command = param.substring(8).replaceAll("%20", " ");
-                        }
-                    }
+        }
+    }
 
-                    Bukkit.getConsoleSender().sendMessage("§b[WebSocket] IP : " + ip);
-                    Bukkit.getConsoleSender().sendMessage("§b[WebSocket] Commande : " + command);
-
-//                    TODO : Send command to the current ip server on the bungeecord network
-                    
-
-                    socket.close();
-
-                } catch (IOException e) {
-                    Bukkit.getConsoleSender().sendMessage("§c[WebSocket] Erreur survenue lors de la réception du socket : " + e);
-                    e.printStackTrace();
-                    Thread.currentThread().interrupt();
-                }
-            }
-        });
-        listenThread.start();
+    // we check like that if the specified server is BungeeCord.
+    private void checkIfBungee()
+    {
+        if ( !getServer().spigot().getConfig().getConfigurationSection("settings").getBoolean( "settings.bungeecord" ) )
+        {
+            getLogger().severe( "This server is not BungeeCord." );
+            getLogger().severe( "If the server is already hooked to BungeeCord, please enable it into your spigot.yml aswell." );
+            getLogger().severe( "Plugin disabled!" );
+            getServer().getPluginManager().disablePlugin( this );
+        }
     }
 
 
